@@ -1,0 +1,35 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+parameters:
+- name: NAMESPACE
+objects:
+- apiVersion: networking.k8s.io/v1
+  kind: NetworkPolicy
+  metadata:
+    name: egress-internet
+  spec:
+    description: "allow ${NAMESPACE} namespace to talk to the internet."
+    source:
+      - - $namespace=${NAMESPACE}
+    destination:
+      - - ext:network=any
+- apiVersion: networking.k8s.io/v1
+  kind: NetworkPolicy
+  metadata:
+    name: intra-namespace-comms
+  spec:
+    description: "allow ${NAMESPACE} namespace to talk to itself"
+    source:
+      - - $namespace=${NAMESPACE}
+    destination:
+      - - $namespace=${NAMESPACE}
+- apiVersion: networking.k8s.io/v1
+  kind: NetworkPolicy
+  metadata:
+    name: int-cluster-k8s-api-comms
+  spec:
+    description: "allow ${NAMESPACE} pods to talk to the k8s api"
+    destination:
+    - - int:network=internal-cluster-api-endpoint
+    source:
+    - - $namespace=${NAMESPACE}

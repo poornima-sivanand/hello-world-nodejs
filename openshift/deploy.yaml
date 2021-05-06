@@ -1,0 +1,161 @@
+---
+kind: Template
+apiVersion: v1
+metadata:
+  name: ${NAME}
+  annotations:
+    description: Deployment template for a nodejs server and postgres db.
+    tags: node
+    iconClass: icon-node
+objects:
+
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    annotations: null
+    creationTimestamp: null
+    labels:
+      shared: "true"
+    name: ${NAME}
+  spec:
+    lookupPolicy:
+      local: true
+
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${NAME}-pvc
+  spec:
+    accessModes:
+      - ReadWriteMany
+    resources:
+      requests:
+        storage: ${PVC_SIZE}
+    storageClassName: netapp-file-standard
+
+
+- kind: Service
+  apiVersion: v1
+  metadata:
+    name: "${NAME}"
+    annotations:
+      description: Exposes and load balances the application pods
+    labels:
+      app: "${NAME}"
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      targetPort: 8080
+    selector:
+      deploymentconfig: "${NAME}"
+      
+- kind: Route
+  apiVersion: v1
+  metadata:
+    name: "${NAME}"
+    labels:
+      app: "${NAME}"
+    # annotations:
+    #   haproxy.router.openshift.io/balance: "roundrobin"
+    #   haproxy.router.openshift.io/disable_cookies: "true"
+  spec:
+    host: "${HOST}"
+    port:
+      targetPort: 8080-tcp
+    path: ''
+    to:
+      kind: Service
+      name: "${NAME}"
+      weight: 100
+    tls:
+      termination: edge
+
+- kind: DeploymentConfig
+  apiVersion: v1
+  metadata:
+    name: "${NAME}"
+    annotations:
+      description: Defines how to deploy the application server
+  spec:
+    strategy:
+      type: Rolling
+    triggers:
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+        - hello-world
+        from:
+          kind: ImageStreamTag
+          name: "${NAME}:${VERSION}"
+    - type: ConfigChange
+    replicas: 2
+    selector:
+      name: "${NAME}"
+    template:
+      metadata:
+        name: "${NAME}"
+        labels:
+          name: "${NAME}"
+      spec:
+        containers:
+          - name: hello-world
+            image: " "
+            ports:
+              - name: hello-world
+                containerPort: 8080
+                protocol: TCP
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 60
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 3
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 25
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 2      
+            resources:
+              requests:
+                memory: 256Mi
+                cpu: 500m
+              limits:
+                memory: 512Mi
+                cpu: 1
+            volumeMounts:   
+              - mountPath: /usr/src/app/test/
+                name: ${NAME}-pvc
+              
+        volumes:
+         - emptyDir: {}
+           name: test
+         - name: ${NAME}-pvc
+           persistentVolumeClaim:
+             claimName: ${NAME}-pvc
+
+parameters:
+- name: VERSION
+  required: true
+  displayName: Name
+  description: The name assigned to all of the objects defined in this template.  You
+    should keep this as default unless your know what your doing.
+  value: '1.0'
+- name: NAME  
+  value: hello-world # Name of image
+- name: HOST
+  value: hello-world.adccd1-tools.apps.silver.devops.gov.bc.ca
+  required: true
+- name: PVC_SIZE
+  required: true
+  value: 100Mi
