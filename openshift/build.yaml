@@ -18,7 +18,7 @@ objects:
       annotations:
       from:
         kind: DockerImage
-        name: nodejs:12-ubi8
+        name: registry.access.redhat.com/ubi8/nodejs-12
       importPolicy: {}
       referencePolicy:
         type: Source
@@ -44,8 +44,10 @@ objects:
       buildconfig: "${NAME}"
   spec:
     source:
-      git: https://github.com/poornima-sivanand/hello-world-nodejs.git
-      ref: master
+      type: ''
+      git:
+        uri: https://github.com/poornima-sivanand/hello-world-nodejs.git
+        ref: master
     strategy:
       sourceStrategy:
         from:
