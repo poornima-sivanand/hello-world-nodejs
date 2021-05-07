@@ -75,6 +75,8 @@ objects:
   apiVersion: v1
   metadata:
     name: "${NAME}"
+    labels:
+      app: "${NAME}"
     annotations:
       description: Defines how to deploy the application server
   spec:
@@ -98,6 +100,7 @@ objects:
         name: "${NAME}"
         labels:
           name: "${NAME}"
+          app: "${NAME}"
       spec:
         containers:
           - name: hello-world
