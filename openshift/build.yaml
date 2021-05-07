@@ -49,6 +49,7 @@ objects:
         uri: https://github.com/poornima-sivanand/hello-world-nodejs.git
         ref: master
     strategy:
+      imageOptimizationPolicy: SkipLayers
       sourceStrategy:
         from:
           kind: "ImageStreamTag"
